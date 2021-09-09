@@ -1,0 +1,14 @@
+{
+  "name": "simple2d",
+  "version": "0.0.1",
+  "description": "A simple 2d lib for using threeJS",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "David Jokinen",
+  "license": "ISC",
+  "peerDependencies": {
+    "three": "^0.132.2"
+  }
+}
