@@ -1,5 +1,6 @@
 const GroupMeshHandler = require("./group-mesh-handler");
 
+console.log(GroupMeshHandler)
 let id = 0;
 class Sprite {
 

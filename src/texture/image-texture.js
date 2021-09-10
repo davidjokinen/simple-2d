@@ -1,4 +1,5 @@
 const THREE = require('three');
+const ResizeImage = require('../resize-image');
 const BaseTexture = require('./base-texture');
 const loadManager = new THREE.LoadingManager();
 const loader = new THREE.TextureLoader(loadManager);

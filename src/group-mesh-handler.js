@@ -1,5 +1,6 @@
 const GroupMesh = require("./group-mesh");
 
+
 let _groupMeshHander = null;
 
 class GroupMeshHandler {
@@ -43,6 +44,7 @@ class GroupMeshHandler {
   }
 
   createSprite() {
+    const Sprite = require("./sprite");
     const handler = GroupMeshHandler.getRootHandler();
     const before = handler.focus;
     handler.focus = this;

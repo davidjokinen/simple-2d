@@ -1,3 +1,4 @@
+const SubTexture = require("./sub-texture");
 
 // TODO: cleanup the static functions
 class TextureMap {
