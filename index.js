@@ -8,6 +8,7 @@ const AnimationTexture = require("./src/texture/animation-texture");
 const BaseTexture = require("./src/texture/base-texture");
 const CanvasTexture = require("./src/texture/canvas-texture");
 const ImageTexture = require("./src/texture/image-texture");
+const createApp = require("./src/create-app");
 
 const textures = {
   AnimationTexture,
@@ -17,13 +18,14 @@ const textures = {
 }
 
 const simple2d = {
-  textures,
+  ...textures,
   GroupMeshHandler,
   GroupMesh,
   ResizeImage,
   Sprite,
   SubTexture,
   TextureMap,
+  createApp,
 };
 
 module.exports = simple2d;
