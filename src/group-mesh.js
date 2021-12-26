@@ -26,18 +26,18 @@ class GroupMesh {
     this.texture.getMaterial().then(material => {
       this.material = material;
       material.onBeforeCompile = (shader) => {
-        shader.vertexShader = shader.vertexShader.replace('void main() {', `
-          attribute vec4 colors;
-          varying vec4 vColourTint;
-          void main() {
-            vColourTint = colors;
-          `);
+        
+        shader.vertexShader = shader.vertexShader.replace('#include <clipping_planes_pars_vertex>', `#include <clipping_planes_pars_vertex>
+attribute vec4 colors;
+varying vec4 vColourTint;`);
+        shader.vertexShader = shader.vertexShader.replace('#include <uv_vertex>', `#include <uv_vertex>
+    vColourTint = vec4(0, 0, 0, 0) + colors;`);
         shader.fragmentShader = shader.fragmentShader.replace('#include <clipping_planes_pars_fragment>', `
             #include <clipping_planes_pars_fragment>
             varying vec4 vColourTint;
           `);
-        shader.fragmentShader = shader.fragmentShader.replace('#include <output_fragment>', `
-          #include <output_fragment>
+        shader.fragmentShader = shader.fragmentShader.replace('#include <dithering_fragment>', `
+          #include <dithering_fragment>
           gl_FragColor = gl_FragColor * vec4(vColourTint.r, vColourTint.g, vColourTint.b, vColourTint.a);
           `);
         shader.needsUpdate=true;
@@ -160,16 +160,19 @@ class GroupMesh {
     posBufferAtt.setUsage(THREE.DynamicDrawUsage);
     posBufferAtt.copyAt(0, this.posBufferAtt, 0);
     this.resized = true;
-
-    // Colors
-    const colors = new Float32Array( 24 * this.maxsize );
-    const colorsBufferAtt = new THREE.BufferAttribute( colors, 4 );
-    colorsBufferAtt.setUsage(THREE.DynamicDrawUsage);
-    colorsBufferAtt.copyAt(0, this.colorBufferAtt, 0);
-    
     this.posBufferAtt = posBufferAtt;
     this.geometry.setAttribute( 'position', this.posBufferAtt);
     this.updateUVs = true;
+
+    // Colors
+    const colors = new Float32Array( 24 * this.maxsize );
+    const colorBufferAtt = new THREE.BufferAttribute( colors, 4 );
+    colorBufferAtt.setUsage(THREE.DynamicDrawUsage);
+    colorBufferAtt.copyAt(0, this.colorBufferAtt, 0);
+    this.colorBufferAtt = colorBufferAtt;
+    this.geometry.setAttribute( 'colors', this.colorBufferAtt);
+    this.updateColor = true;
+    
     const newNormals = new Float32Array( 18 * this.maxsize );
     // faster than calling computeVertexNormals
     for (let i=0;i<newNormals.length;i++) {

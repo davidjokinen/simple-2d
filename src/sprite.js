@@ -119,7 +119,6 @@ class Sprite {
     const mesh = handle.getMesh(texture);
     mesh.addTexture(this.texture);
     mesh.addSprite(this);
-    console.log(handle)
   }
 
   addPosition(x,y,z) {
