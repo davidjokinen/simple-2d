@@ -12,9 +12,12 @@ class GroupMesh {
 
     this.posBufferAtt = this._createPosBuffer();
     this.uvBufferAtt = this._createUVBuffer();
+    this.colorBufferAtt = this._createColorBuffer();
+    // this.angleBufferAtt = this._createColorBuffer();
 
     this.geometry.setAttribute( 'position', this.posBufferAtt);
     this.geometry.setAttribute( 'uv', this.uvBufferAtt);
+    this.geometry.setAttribute( 'colors', this.colorBufferAtt);
 
     this.geometry.computeVertexNormals();
     this.geometry.renderOrder = handler.defaultZPosition*100;
@@ -22,6 +25,23 @@ class GroupMesh {
 
     this.texture.getMaterial().then(material => {
       this.material = material;
+      material.onBeforeCompile = (shader) => {
+        shader.vertexShader = shader.vertexShader.replace('void main() {', `
+          attribute vec4 colors;
+          varying vec4 vColourTint;
+          void main() {
+            vColourTint = colors;
+          `);
+        shader.fragmentShader = shader.fragmentShader.replace('#include <clipping_planes_pars_fragment>', `
+            #include <clipping_planes_pars_fragment>
+            varying vec4 vColourTint;
+          `);
+        shader.fragmentShader = shader.fragmentShader.replace('#include <output_fragment>', `
+          #include <output_fragment>
+          gl_FragColor = gl_FragColor * vec4(vColourTint.r, vColourTint.g, vColourTint.b, vColourTint.a);
+          `);
+        shader.needsUpdate=true;
+      };
       // remember about alphaTest
       this.material.opacity = handler.opacity;
       this.mesh = new THREE.Mesh( this.geometry, material );
@@ -37,6 +57,7 @@ class GroupMesh {
     this.updateNormals = false;
     this.updateUVs = false;
     this.updatePos = false;
+    this.updateColor = true;
 
     this._textures = [];
     this._sprites = [];
@@ -54,46 +75,51 @@ class GroupMesh {
     }
     const updateUVs = this.updateUVs;
     const updatePos = this.updatePos;
+    const updateColor = this.updateColor;
     const resized = this.resized;
     const sprites = this.sprites;
     const uvBufferAtt = this.uvBufferAtt;
     const posBufferAttArray = this.posBufferAtt.array;
-    if (updateUVs || updatePos) {
+    const colorBufferAttArray = this.colorBufferAtt.array;
+    if (updateUVs || updatePos || updateColor) {
       const length = this.size;
       this.geometry.setDrawRange(0,length*6);
       for (let i=0;i<length;i++) {
         const sprite = sprites[i];
-        if (sprite === undefined) continue;
-        if (sprite === null) continue;
+        // if (sprite === undefined) continue;
+        // if (sprite === null) continue;
+        if (sprite._removed && !sprite) {
+          console.log('error')
+          continue;
+        }
+
         if (!resized && !sprite.needsUpdate) continue;
 
         if (updateUVs)
           sprite.applyUV(uvBufferAtt);
         
-        if (updatePos)
+        if (updatePos) {
+          sprite.pos = i;
           sprite.applyVertices(posBufferAttArray);
+        }
+        if (updateColor) {
+          sprite.applyColors(colorBufferAttArray);
+        }
         sprite.needsUpdate = false;
       }
       if (updateUVs)
         this.uvBufferAtt.needsUpdate = true;
-      if (updatePos) {
+      if (updatePos)
         this.posBufferAtt.needsUpdate = true;
-        // this.geometry.computeBoundingSphere();
-      }
+      if (updateColor)
+        this.colorBufferAtt.needsUpdate = true;
       this.updatePos = false;
       this.updateUVs = false;
       this.resized = false;
     }
-    // if (this.updatePos) {
-    //   this.updatePos = false;
-    //   for (let i=0;i<this.sprites.length;i++) {
-    //     const sprite = this.sprites[i];
-    //     sprite.applyVertices(this.posBufferAtt.array);
-    //   }
-    // }
+
     if (this.updateNormals) {
       this.updateNormals = false;
-      // this.geometry.computeVertexNormals();
     }
   }
 
@@ -109,6 +135,13 @@ class GroupMesh {
     const uvBufferAtt = new THREE.BufferAttribute( uvs, 2 );
     uvBufferAtt.setUsage(THREE.DynamicDrawUsage);
     return uvBufferAtt;
+  }
+
+  _createColorBuffer() {
+    const colors = new Float32Array( 24 * this.maxsize );
+    const colorBufferAtt = new THREE.BufferAttribute( colors, 4 );
+    colorBufferAtt.setUsage(THREE.DynamicDrawUsage);
+    return colorBufferAtt;
   }
 
   _expandBuffers() {
@@ -127,6 +160,12 @@ class GroupMesh {
     posBufferAtt.setUsage(THREE.DynamicDrawUsage);
     posBufferAtt.copyAt(0, this.posBufferAtt, 0);
     this.resized = true;
+
+    // Colors
+    const colors = new Float32Array( 24 * this.maxsize );
+    const colorsBufferAtt = new THREE.BufferAttribute( colors, 4 );
+    colorsBufferAtt.setUsage(THREE.DynamicDrawUsage);
+    colorsBufferAtt.copyAt(0, this.colorBufferAtt, 0);
     
     this.posBufferAtt = posBufferAtt;
     this.geometry.setAttribute( 'position', this.posBufferAtt);
@@ -143,13 +182,15 @@ class GroupMesh {
   }
 
   updateSpritePos(sprite) {
-    // sprite.applyVertices(this.posBufferAtt.array);
     this.updatePos = true;
   }
 
   updateSpriteTexture(sprite) {
-    // sprite.applyUV(this.uvBufferAtt.array);
     this.updateUVs = true;
+  }
+
+  updateSpriteColor(sprite) {
+    this.updateColor = true;
   }
 
   addTexture(texture) {
@@ -160,10 +201,11 @@ class GroupMesh {
   remove(sprite) {
     const removePos = this.sprites.indexOf(sprite);
     const lastPos = this.size - 1;
+    const removeItem = this.sprites[lastPos];
     this.sprites[lastPos].needsUpdate = true;
     this.sprites[removePos].needsUpdate = true;
-    this.sprites[lastPos]._link.pos = this.sprites[removePos]._link.pos;
     this.sprites[removePos] = this.sprites[lastPos];
+    this.sprites[lastPos] = removeItem;
     this.size -= 1;
     this.updatePos = true;
     this.updateUVs = true;
@@ -184,13 +226,8 @@ class GroupMesh {
     this.sprites[pos] = sprite;
     this.size += 1;
     this.geometry.setDrawRange( 0, this.size*6 );
-    sprite._link = {
-      pos: pos,
-      mesh: this,
-      remove: () => {
-        this.remove(sprite);
-      },
-    };
+    sprite.mesh = this;
+    sprite.pos = pos;
     this.updateSpriteTexture(sprite);
     this.updateSpritePos(sprite);
   }

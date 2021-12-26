@@ -29,10 +29,15 @@ class GroupMeshHandler {
     if (!_groupMeshHander) {
       _groupMeshHander = new GroupMeshHandler();
     }
-    if (_groupMeshHander.focus) {
-      return _groupMeshHander.focus;
-    }
     return _groupMeshHander;
+  }
+
+  static getFocusedHandler() {
+    const handler = GroupMeshHandler.getRootHandler();
+    if (handler.focus) {
+      return handler.focus;
+    }
+    return handler;
   }
 
   createChildHandler() {
@@ -68,6 +73,7 @@ class GroupMeshHandler {
       const mesh = new GroupMesh(this, texture);
       this.allMeshes.push(mesh);
       this.meshes[file] = mesh;
+
     }
     return this.meshes[file];
   }

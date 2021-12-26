@@ -75,8 +75,8 @@ class TextureMap {
     let paddingY = 0;
     let paddingAddX = 0;
     let paddingAddY = 0;
-    let scaleX = fullSizeX/countX;
-    let scaleY = countY ? fullSizeX/countY : scaleX;
+    let scaleX = 1;
+    let scaleY = 1; //countY ? fullSizeX/countY : scaleX;
     image.onLoad(image => {
       subX = image.size.width - image.orginalSize.width ;
       subY = image.size.height - image.orginalSize.height ;
@@ -159,12 +159,11 @@ class TextureMap {
     let fullSizeY = 1-bufferX;
     let paddingX = 0;
     let paddingY = 0;
-    let scaleX = fullSizeX/countX;
-    let scaleY = countY ? fullSizeX/countY : scaleX;
+    let scaleX = 1;//fullSizeX/countX;
+    let scaleY = 1;//countY ? fullSizeX/countY : scaleX;
     image.onLoad(image => {
       countX = (image.orginalSize.width+1) / (spriteWidth+padding);
       countY = (image.orginalSize.height+1) / (spriteHeight+padding);
-      console.log(image, countX, countY);
       subX = image.size.width - image.orginalSize.width;
       subY = image.size.height - image.orginalSize.height;
       width = image.size.width;

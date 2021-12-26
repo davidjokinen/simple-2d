@@ -16,9 +16,11 @@ class ImageTexture extends BaseTexture {
       this.size = resizedImage.size;
       this.orginalSize = resizedImage.orginalSize;
       const texture = loader.load(resizedImage.url(), () => {
+        
         texture.magFilter = THREE.NearestFilter;
         texture.minFilter = THREE.NearestMipmapNearestFilter;
         texture.needsUpdate = true;
+        this.texture = texture;
 
         const material = new THREE.MeshBasicMaterial({
           map: texture,

@@ -25,7 +25,7 @@ class SubTexture {
     if (index)
       this.index = index;
     pos = pos || 0;
-    this.uvSetter(buffer.array, this.index, pos);
+    this.uvSetter(buffer.array || buffer, this.index, pos);
   }
 
   copyBuffer(buffer, pos) {

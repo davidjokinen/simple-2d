@@ -14,13 +14,20 @@ class Sprite {
     this._w = w || 1;
     this._h = h || 1;
 
+    this._alpha = 1.0;
+    this._tintR = 1.0;
+    this._tintG = 1.0;
+    this._tintB = 1.0;
+
     this._onPositionChange = [];
 
     this.needsUpdate = true;
 
     this.texture = null;
-    this._link = null;
+    // this.mesh = null;
+    // this.pos = null;
     this._removed = false;
+
     if (texture)
       this.setTexture(texture);
 
@@ -31,22 +38,23 @@ class Sprite {
   }
 
   _updateTexture() {
-    if (this._link) {
-      this.needsUpdate = true;
-      this._link.mesh.updateSpriteTexture(this);
-    }
+    this.needsUpdate = true;
+    if (this.mesh)
+      this.mesh.updateSpriteTexture(this);
   }
   
   remove() {
     if (this._removed) return;
-    this._link.remove();
+    if (this.mesh)
+      this.mesh.remove(this);
     this._removed = true;
     this.needsUpdate = true;
   }
 
   applyVertices(buffer) {
-    const pos = this._link.pos || 0;
+    const pos = this.pos || 0;
     const index = pos*18;
+    
     const _x = this._x;
     const _y = this._y;
     const _z = this._z;
@@ -79,20 +87,31 @@ class Sprite {
   }
 
   applyUV(buffer) {
-    this.texture.updateBuffer(buffer, this._link.pos);
+    this.texture.updateBuffer(buffer, this.pos);
+  }
+
+  applyColors(array) {
+    const pos = this.pos;
+    // Set the color for each vertex
+    for (let i=0;i<6;i++) {
+      const index = (i*4)+pos*24;
+      array[index+0] = this._tintR;
+      array[index+1] = this._tintG;
+      array[index+2] = this._tintB;
+      array[index+3] = this._alpha;
+    }
   }
 
   setTexture(texture) {
     this.texture = texture;
-    if (this._link) {
+    if (this.pos !== undefined) {
       // TODO: Check to see texture has a different base texture.
-      this._updateTexture();
+      // this._updateTexture();
       return;
     }
     // Setting texture for the first time.
-    const handle = GroupMeshHandler.getRootHandler();
-    // Ugg animation something here
-
+    const handle = GroupMeshHandler.getFocusedHandler();
+    
     // TODO: Clean this up
     if (texture.texture) {
       texture = texture.texture
@@ -100,13 +119,14 @@ class Sprite {
     const mesh = handle.getMesh(texture);
     mesh.addTexture(this.texture);
     mesh.addSprite(this);
+    console.log(handle)
   }
 
   addPosition(x,y,z) {
     this._x += x;
     this._y += y;
     this._z += z;
-    this._link.mesh.updateSpritePos(this);
+    this.mesh.updateSpritePos(this);
     this.needsUpdate = true;
     this._onPositionChange.forEach(event => event(x, y));
   }
@@ -115,7 +135,7 @@ class Sprite {
     this._x = x;
     this._y = y;
     // if (z) this._z = z;
-    this._link.mesh.updateSpritePos(this);
+    this.mesh.updateSpritePos(this);
     this.needsUpdate = true;
     this._onPositionChange.forEach(event => event(x, y));
   }
@@ -123,7 +143,29 @@ class Sprite {
   updateSize(w, h) {
     this._w = w || 1;
     this._h = h || 1;
-    this._link.mesh.updateSpritePos(this);
+    this.mesh.updateSpritePos(this);
+    this.needsUpdate = true;
+  }
+
+  get alpha() {
+    return this._alpha;
+  }
+
+  set alpha(newAlpha) {
+    this.needsUpdate = true;
+    this.mesh.updateSpriteColor(this);
+    this._alpha = newAlpha;
+  }
+
+  get tint() {
+    return this._alpha;
+  }
+
+  set tint(newTint) {
+    this._tintR = (newTint >> 16 & 255) / 255;
+    this._tintG = (newTint >> 8 & 255) / 255;
+    this._tintB = (newTint >> 0 & 255) / 255;
+    this.mesh.updateSpriteColor(this);
     this.needsUpdate = true;
   }
 
